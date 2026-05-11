@@ -53,16 +53,19 @@ def ask_llm(prompt):
     data = response.json()
     return data["response"]
 
-
 def process_response(response):
     try:
-        return json.loads(response)
+        start = response.find("{")
+        end = response.rfind("}") + 1
+
+        json_str = response[start:end]
+        return json.loads(json_str)
+
     except Exception:
         return {
             "action": "normal_chat",
             "message": response
         }
-
 
 while True:
     user_input = input("Voce: ")
@@ -101,7 +104,8 @@ Analise e resuma de forma objetiva o status abaixo do servidor:
         print("\nJarvis:", summary, "\n")
 
     elif action == "normal_chat":
-        print("\nJarvis:", parsed.get("message"), "\n")
+    	message = parsed.get("message", "Sem resposta.")
+    	print(f"\nJarvis: {message}\n")
 
     else:
         print("\nJarvis: Acao desconhecida.\n")

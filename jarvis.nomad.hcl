@@ -13,6 +13,7 @@ job "jarvis-home-server" {
 
     network {
       mode = "bridge"
+
       port "http" {
         static = 8000
       }
@@ -23,18 +24,24 @@ job "jarvis-home-server" {
 
       config {
         image = "python:3.12-slim"
+
         command = "bash"
+
         args = [
           "-lc",
-          "cd /app && python -m pip install --no-cache-dir -r requirements.txt && uvicorn app:app --host 0.0.0.0 --port 8000"
+          <<EOF
+cd /app && \
+python -m pip install --no-cache-dir -r requirements.txt && \
+python -m uvicorn app:app --host 0.0.0.0 --port 8000
+EOF
         ]
-        port_map {
-          http = 8000
-        }
+
+        ports = ["http"]
       }
 
       env {
         PIP_NO_CACHE_DIR = "1"
+        PYTHONUNBUFFERED = "1"
       }
 
       volume_mount {
@@ -44,12 +51,8 @@ job "jarvis-home-server" {
       }
 
       resources {
-        cpu      = 500
-        memory   = 512
-        network {
-          mbits = 10
-          port "http" {}
-        }
+        cpu    = 500
+        memory = 512
       }
 
       service {
@@ -61,6 +64,13 @@ job "jarvis-home-server" {
           interval = "10s"
           timeout  = "2s"
         }
+      }
+
+      restart {
+        attempts = 5
+        interval = "30m"
+        delay    = "15s"
+        mode     = "delay"
       }
     }
   }

@@ -10,7 +10,7 @@ def build_prompt(user_message):
     memory = load_memory()
 
     system_prompt = f"""
-Você é Jarvis, meu assistente pessoal de infraestrutura.
+Você é Jarvis, meu assistente pessoal de infraestrutura e programação Devops.
 
 Memória persistente do usuário:
 {memory}

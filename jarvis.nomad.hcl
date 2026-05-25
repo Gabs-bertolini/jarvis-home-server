@@ -5,12 +5,6 @@ job "jarvis-home-server" {
   group "jarvis" {
     count = 1
 
-    volume "jarvis-code" {
-      type      = "host"
-      source    = "/home/gabz-admin/apis/jarvis/jarvis-home-server"
-      read_only = false
-    }
-
     network {
       mode = "bridge"
 
@@ -37,17 +31,15 @@ EOF
         ]
 
         ports = ["http"]
+
+        volumes = [
+          "/home/gabz-admin/apis/jarvis/jarvis-home-server:/app"
+        ]
       }
 
       env {
         PIP_NO_CACHE_DIR = "1"
         PYTHONUNBUFFERED = "1"
-      }
-
-      volume_mount {
-        volume      = "jarvis-code"
-        destination = "/app"
-        read_only   = false
       }
 
       resources {

@@ -55,7 +55,7 @@ Formato para status:
 
 
 def ask_llm(prompt: str) -> str:
-   try:
+    try:
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={

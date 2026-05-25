@@ -207,3 +207,26 @@ Projeto inspirado no conceito de assistente pessoal local estilo Jarvis, combina
 ---
 
 Made with coffee, Linux and questionable sleep schedule.
+
+## FastAPI
+
+Instale as dependências do FastAPI:
+
+```bash
+pip install -r requirements.txt
+```
+
+Inicie o servidor:
+
+```bash
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
+```
+
+A API ficará disponível em `http://127.0.0.1:8000`.
+
+Endpoints:
+
+- `POST /chat` com JSON `{ "message": "Olá" }`
+- `GET /memory` para ler a memória atual
+- `POST /remember` com JSON `{ "key": "foo", "value": "bar" }`
+- `GET /server-status` para ver o status do servidor

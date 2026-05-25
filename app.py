@@ -1,5 +1,7 @@
 import json
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
@@ -7,8 +9,12 @@ from requests.exceptions import RequestException, Timeout
 from memory import load_memory, update_memory
 from actions import server_status
 
-MODEL = "llama3.2:3b"
+load_dotenv()
+
+MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 BASE_DIR = Path(__file__).resolve().parent
+MEMORY_FILE = BASE_DIR / "memory.json"
 
 app = FastAPI(title="Jarvis Home Server", version="1.0")
 
@@ -57,7 +63,7 @@ Formato para status:
 def ask_llm(prompt: str) -> str:
     try:
         response = requests.post(
-            "http://localhost:11434/api/generate",
+            f"{OLLAMA_HOST}/api/generate",
             json={
                 "model": MODEL,
                 "prompt": prompt,
@@ -84,12 +90,12 @@ def process_response(response: str) -> dict:
         return {"action": "normal_chat", "message": response}
 
 
-@app.get("/jarvis")
+@app.get("/")
 async def root():
     return {"message": "Jarvis FastAPI server is running."}
 
 
-@app.post("/jarvis/chat")
+@app.post("/chat")
 async def chat(request: ChatRequest):
     prompt = build_prompt(request.message)
     raw_response = ask_llm(prompt)
@@ -125,12 +131,12 @@ Analise e resuma de forma objetiva o status abaixo do servidor:
     }
 
 
-@app.get("/jarvis/memory")
+@app.get("/memory")
 async def get_memory():
     return load_memory()
 
 
-@app.post("/jarvis/remember")
+@app.post("/remember")
 async def remember(request: RememberRequest):
     try:
         update_memory(request.key, request.value)
@@ -139,7 +145,7 @@ async def remember(request: RememberRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/jarvis/server-status")
+@app.get("/server-status")
 async def get_server_status():
     raw_status = server_status()
     return {"status": raw_status}

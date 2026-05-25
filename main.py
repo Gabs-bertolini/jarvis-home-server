@@ -1,9 +1,14 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
 from memory import load_memory, update_memory
 from actions import server_status
 
-MODEL = "llama3.2:3b"
+load_dotenv()
+
+MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 
 def build_prompt(user_message):
@@ -42,7 +47,7 @@ Formato para status:
 
 def ask_llm(prompt):
     response = requests.post(
-        "http://localhost:11434/api/generate",
+        f"{OLLAMA_HOST}/api/generate",
         json={
             "model": MODEL,
             "prompt": prompt,

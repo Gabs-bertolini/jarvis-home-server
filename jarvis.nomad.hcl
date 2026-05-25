@@ -40,6 +40,7 @@ EOF
       env {
         PIP_NO_CACHE_DIR = "1"
         PYTHONUNBUFFERED = "1"
+        OLLAMA_URL = "http://192.168.0.211:11434/api/generate"
       }
 
       resources {
@@ -53,9 +54,6 @@ EOF
         delay    = "15s"
         mode     = "delay"
       }
-    }
-  env {
-  OLLAMA_HOST = "http://192.168.0.211:11434/api/generate"
     }
   }
 }

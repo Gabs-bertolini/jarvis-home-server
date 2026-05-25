@@ -55,17 +55,6 @@ EOF
         memory = 512
       }
 
-      service {
-        name = "jarvis-home-server"
-        port = "http"
-
-        check {
-          type     = "tcp"
-          interval = "10s"
-          timeout  = "2s"
-        }
-      }
-
       restart {
         attempts = 5
         interval = "30m"

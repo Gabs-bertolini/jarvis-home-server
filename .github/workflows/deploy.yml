@@ -15,3 +15,5 @@ jobs:
           cd /home/gabz-admin/apis/jarvis/jarvis-home-server
           git fetch origin
           git reset --hard origin/main
+          nomad stop jarvis-home-server
+          nomad run jarvis.nomad.hcl

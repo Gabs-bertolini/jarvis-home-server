@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import requests
+from requests.exceptions import RequestException, Timeout
 from memory import load_memory, update_memory
 from actions import server_status
 
@@ -54,18 +55,23 @@ Formato para status:
 
 
 def ask_llm(prompt: str) -> str:
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": MODEL,
-            "prompt": prompt,
-            "stream": False,
-        },
-        timeout=30,
-    )
-    response.raise_for_status()
-    data = response.json()
-    return data.get("response", "")
+   try:
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": MODEL,
+                "prompt": prompt,
+                "stream": False,
+            },
+            timeout=120,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data.get("response", "")
+    except Timeout as exc:
+        raise HTTPException(status_code=504, detail=f"LLM request timed out: {exc}")
+    except RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"LLM request failed: {exc}")
 
 
 def process_response(response: str) -> dict:

@@ -25,6 +25,7 @@ Você possui ações disponíveis.
 Ações disponíveis:
 - normal_chat
 - server_status
+- docker_status
 
 REGRAS:
 - Responda SEMPRE em JSON válido.
@@ -102,6 +103,16 @@ while True:
 
         summary_prompt = f"""
 Analise e resuma de forma objetiva o status abaixo do servidor:
+
+{raw_status}
+"""
+        summary = ask_llm(summary_prompt)
+        print("\nJarvis:", summary, "\n")
+    
+    if action == "docker_status":
+        raw_status = docker_status()
+
+        summary_prompt = f"""Analise e resuma de forma objetiva o status abaixo do docker:
 
 {raw_status}
 """

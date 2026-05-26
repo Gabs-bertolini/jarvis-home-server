@@ -41,6 +41,7 @@ Você possui ações disponíveis.
 Ações disponíveis:
 - normal_chat
 - server_status
+- docker_status
 
 REGRAS:
 - Responda SEMPRE em JSON válido.
@@ -116,6 +117,20 @@ Analise e resuma de forma objetiva o status abaixo do servidor:
             "summary": summary,
             "raw_response": raw_response,
         }
+
+        if action == "docker_status":
+            raw_status = docker_status()
+            summary_prompt = f"""Analise e resuma de forma objetiva o status abaixo do docker:  
+
+{raw_status}
+"""
+            summary = ask_llm(summary_prompt)
+            return {
+                "action": "docker_status",
+                "status": raw_status,
+                "summary": summary,
+                "raw_response": raw_response,
+            }
 
     if action == "normal_chat":
         return {

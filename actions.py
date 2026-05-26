@@ -30,3 +30,15 @@ def server_status():
 === UPTIME ===
 {uptime}
 """
+
+def docker_status():
+    dockerps = subprocess.run(
+        ["docker", "ps"],
+        capture_output=True,
+        text=True
+    ).stdout
+
+    return f"""=== DOCKER PS ===
+{dockerps}
+"""
+

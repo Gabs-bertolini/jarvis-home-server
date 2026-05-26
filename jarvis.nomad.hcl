@@ -40,7 +40,7 @@ EOF
       env {
         PIP_NO_CACHE_DIR = "1"
         PYTHONUNBUFFERED = "1"
-        OLLAMA_URL = "http://192.168.0.211:11434/api/generate"
+        OLLAMA_URL = "http://192.168.0.211:11434/"
       }
 
       resources {

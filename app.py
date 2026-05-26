@@ -90,12 +90,12 @@ def process_response(response: str) -> dict:
         return {"action": "normal_chat", "message": response}
 
 
-@app.get("/")
+@app.get("/jarvis")
 async def root():
     return {"message": "Jarvis FastAPI server is running."}
 
 
-@app.post("/chat")
+@app.post("/jarvis/chat")
 async def chat(request: ChatRequest):
     prompt = build_prompt(request.message)
     raw_response = ask_llm(prompt)
@@ -131,12 +131,12 @@ Analise e resuma de forma objetiva o status abaixo do servidor:
     }
 
 
-@app.get("/memory")
+@app.get("/jarvis/memory")
 async def get_memory():
     return load_memory()
 
 
-@app.post("/remember")
+@app.post("/jarvis/remember")
 async def remember(request: RememberRequest):
     try:
         update_memory(request.key, request.value)
@@ -145,7 +145,7 @@ async def remember(request: RememberRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/server-status")
+@app.get("/jarvis/server-status")
 async def get_server_status():
     raw_status = server_status()
     return {"status": raw_status}

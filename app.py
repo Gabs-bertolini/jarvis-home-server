@@ -12,7 +12,7 @@ from actions import server_status
 load_dotenv()
 
 MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://192.168.0.211:11434")
 BASE_DIR = Path(__file__).resolve().parent
 MEMORY_FILE = BASE_DIR / "memory.json"
 

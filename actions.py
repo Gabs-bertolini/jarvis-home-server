@@ -1,35 +1,22 @@
+import requests
+import json
 import subprocess
 
+GLANCES_URL = "http://192.168.0.211:61208/api/4/all"
 
 def server_status():
-    memory = subprocess.run(
-        ["free", "-h"],
-        capture_output=True,
-        text=True
-    ).stdout
+    response = requests.get(GLANCES_URL)
 
-    disk = subprocess.run(
-        ["df", "-h", "/"],
-        capture_output=True,
-        text=True
-    ).stdout
+    data = response.json()
 
-    uptime = subprocess.run(
-        ["uptime"],
-        capture_output=True,
-        text=True
-    ).stdout
+    summary = {
+        "cpu_percent": data["cpu"]["total"],
+        "memory_percent": data["mem"]["percent"],
+        "uptime": data["uptime"],
+        "disk": data["fs"]
+    }
 
-    return f"""
-=== MEMORY ===
-{memory}
-
-=== DISK ===
-{disk}
-
-=== UPTIME ===
-{uptime}
-"""
+    return json.dumps(summary, indent=2)
 
 def docker_status():
     dockerps = subprocess.run(

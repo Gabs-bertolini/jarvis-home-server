@@ -230,3 +230,4 @@ Endpoints:
 - `GET /memory` para ler a memória atual
 - `POST /remember` com JSON `{ "key": "foo", "value": "bar" }`
 - `GET /server-status` para ver o status do servidor
+- `POST /discord/webhook` com JSON `{ \"content\": \"comando\" }` e header `X-Discord-Token: <seu_token>` para receber comandos do Discord

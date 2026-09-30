@@ -1,8 +1,10 @@
 import json
 import os
+import hmac
+import hashlib
 from pathlib import Path
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 import requests
 from requests.exceptions import RequestException, Timeout
@@ -15,6 +17,7 @@ MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://192.168.0.211:11434")
 BASE_DIR = Path(__file__).resolve().parent
 MEMORY_FILE = BASE_DIR / "memory.json"
+DISCORD_WEBHOOK_TOKEN = os.getenv("DISCORD_WEBHOOK_TOKEN")
 
 app = FastAPI(title="Jarvis Home Server", version="1.0")
 
@@ -30,7 +33,7 @@ class RememberRequest(BaseModel):
 
 def build_prompt(user_message: str) -> str:
     memory = load_memory()
-    system_prompt = f"""
+    system_prompt = f"""\
 Você é Jarvis, meu assistente pessoal de infraestrutura.
 
 Memória persistente do usuário:
@@ -48,15 +51,15 @@ REGRAS:
 - Nunca escreva texto fora do JSON.
 
 Formato para conversa normal:
-{{
+{
     "action": "normal_chat",
     "message": "resposta aqui"
-}}
+}
 
 Formato para status:
-{{
+{
     "action": "server_status"
-}}
+}
 """
     return system_prompt + "\nUsuário: " + user_message
 
@@ -91,32 +94,20 @@ def process_response(response: str) -> dict:
         return {"action": "normal_chat", "message": response}
 
 
-@app.get("/jarvis")
-async def root():
-    return {"message": "Jarvis FastAPI server is running."}
-
-
-@app.post("/jarvis/chat")
-async def chat(request: ChatRequest):
-    prompt = build_prompt(request.message)
-
+def _process_chat_message(message: str) -> dict:
+    prompt = build_prompt(message)
     raw_response = ask_llm(prompt)
-
     parsed = process_response(raw_response)
-
     action = parsed.get("action")
 
     if action == "server_status":
         raw_status = server_status()
-
-        summary_prompt = f"""
+        summary_prompt = f"""\
 Analise e resuma de forma objetiva o status abaixo do servidor:
 
 {raw_status}
 """
-
         summary = ask_llm(summary_prompt)
-
         return {
             "action": "server_status",
             "status": raw_status,
@@ -126,15 +117,12 @@ Analise e resuma de forma objetiva o status abaixo do servidor:
 
     if action == "docker_status":
         raw_status = docker_status()
-
-        summary_prompt = f"""
+        summary_prompt = f"""\
 Analise e resuma de forma objetiva o status abaixo do docker:
 
 {raw_status}
 """
-
         summary = ask_llm(summary_prompt)
-
         return {
             "action": "docker_status",
             "status": raw_status,
@@ -154,6 +142,37 @@ Analise e resuma de forma objetiva o status abaixo do docker:
         "message": "Ação desconhecida.",
         "raw_response": raw_response,
     }
+
+
+@app.get("/jarvis")
+async def root():
+    return {"message": "Jarvis FastAPI server is running."}
+
+
+@app.post("/jarvis/chat")
+async def chat(request: ChatRequest):
+    return _process_chat_message(request.message)
+
+
+@app.post("/discord/webhook")
+async def discord_webhook(request: Request):
+    # Verify token
+    token = request.headers.get("X-Discord-Token")
+    if DISCORD_WEBHOOK_TOKEN is None:
+        raise HTTPException(
+            status_code=500, detail="Discord webhook token not configured"
+        )
+    if token != DISCORD_WEBHOOK_TOKEN:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Parse JSON body
+    data = await request.json()
+    content = data.get("content", "")
+    if not content:
+        raise HTTPException(status_code=400, detail="Missing 'content' in request")
+
+    # Process the message
+    return _process_chat_message(content)
 
 
 @app.get("/jarvis/memory")

@@ -6,12 +6,12 @@ job "jarvis-home-server" {
     count = 1
 
     network {
-      mode = "bridge"
-
-      port "http" {
-        static = 8000
+        mode = "host"
+  
+        port "http" {
+          static = 8000
+        }
       }
-    }
 
     task "jarvis-api" {
       driver = "docker"

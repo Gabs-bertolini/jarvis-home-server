@@ -24,7 +24,7 @@ tree = app_commands.CommandTree(client)
 # --- SUAS FUNÇÕES ORIGINAIS DO JARVIS (MANTIDAS EXATAMENTE IGUAIS) ---
 def build_prompt(user_message: str) -> str:
     memory = load_memory()
-    system_prompt = f"""Você é Jarvis, meu assistente pessoal de infraestrutura.
+    system_prompt = f"""Você é Jarvis, meu assistente pessoal de infraestrutura, utilize um linguajar informal.
 Memória persistente do usuário:
 {json.dumps(memory, indent=4, ensure_ascii=False)}
 Você possui ações disponíveis (- normal_chat, - server_status, - docker_status).

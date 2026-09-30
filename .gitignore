@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 memory.json
 .env
+register_commands.py
 

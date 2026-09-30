@@ -154,74 +154,77 @@ async def chat(request: ChatRequest):
     return _process_chat_message(request.message)
 
 
+from nacl.signing import VerifyKey
+from nacl.exceptions import BadSignatureError
+
+# 1. PEGUE A SUA "PUBLIC KEY" (NÃO É O TOKEN!)
+# Vá na aba "General Information" do painel do Discord e copie o campo "PUBLIC KEY"
+DISCORD_PUBLIC_KEY = os.getenv("DISCORD_PUBLIC_KEY", "COLE_AQUI_SUA_PUBLIC_KEY_SE_NAO_USAR_ENV")
+
 @app.post("/discord/webhook")
 async def discord_webhook(request: Request):
-    # Parse JSON body primeiro para saber o que chegou
+    # --- PASSO OBRIGATÓRIO DO DISCORD: VERIFICAÇÃO CRIPTOGRÁFICA ED25519 ---
+    signature = request.headers.get("X-Signature-Ed25519")
+    timestamp = request.headers.get("X-Signature-Timestamp")
+    
+    # Se não tiver assinatura e tiver o seu token customizado, assume que é o seu cURL manual antigo
+    token = request.headers.get("X-Discord-Token")
+    is_manual_curl = token == DISCORD_WEBHOOK_TOKEN and token is not None
+
+    body = await request.body()
+
+    if not is_manual_curl:
+        if not signature or not timestamp:
+            raise HTTPException(status_code=401, detail="Missing Discord signatures")
+        
+        try:
+            # Valida matematicamente se a requisição veio mesmo do servidor do Discord
+            verify_key = VerifyKey(bytes.fromhex(DISCORD_PUBLIC_KEY))
+            verify_key.verify(f"{timestamp}".encode() + body, bytes.fromhex(signature))
+        except BadSignatureError:
+            raise HTTPException(status_code=401, detail="Invalid request signature")
+    # ------------------------------------------------------------------------
+
+    # Parse do JSON após passar na segurança
     try:
-        data = await request.json()
+        data = json.loads(body)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
-    # 1. REGRA OBRIGATÓRIA DO DISCORD: Responder ao PING de validação
-    # O Discord envia type=1 para testar se a URL está viva.
+    # Responder ao PING de validação do Discord para salvar a URL
     if data.get("type") == 1:
         return {"type": 1}
 
-    # 2. VALIDAÇÃO DE SEGURANÇA (Seu Token Customizado ou Assinatura do Discord)
-    token = request.headers.get("X-Discord-Token")
-    
-    # Se NÃO for o seu cURL manual (ou seja, se veio do Discord real), ele não terá o seu token.
-    # Para passar na validação do painel do Discord sem implementar a biblioteca complexa de criptografia Ed25519 agora,
-    # vamos permitir que a requisição passe se o 'type' for uma interação do Discord (geralmente tipo 2).
-    is_discord_interaction = "type" in data and data.get("type") != 1
-    
-    if not is_discord_interaction:
-        if DISCORD_WEBHOOK_TOKEN is None:
-            raise HTTPException(
-                status_code=500, detail="Discord webhook token not configured"
-            )
-        if token != DISCORD_WEBHOOK_TOKEN:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-    # 3. TRATAMENTO DO CONTEÚDO (Mapeia o formato do cURL manual OU do Slash Command do Discord)
+    # Processamento do conteúdo das mensagens (Manual ou Slash Command)
     content = ""
-    
-    # Se veio do seu cURL manual: d '{"content": "/chat Olá"}'
     if "content" in data:
         content = data.get("content", "")
-        
-    # Se veio de um Slash Command (/chat) real do Discord:
     elif data.get("type") == 2:
-        # Pega o texto que o usuário digitou no comando do Discord
-        # Nota: Ajuste a estrutura abaixo dependendo de como você criar o argumento do comando no Discord.
         try:
+            # Captura o valor digitado no comando do Discord
             options = data["data"].get("options", [])
             if options:
-                content = options[0].get("value", "")
+                content = options[0].get("value", "") # Pega o valor do primeiro argumento
         except Exception:
             content = ""
 
     if not content:
         raise HTTPException(status_code=400, detail="Missing 'content' or command input in request")
 
-    # 4. PROCESSAR A MENSAGEM NA LLM (Sua lógica do Jarvis)
+    # Executa a sua LLM (Jarvis)
     jarvis_result = _process_chat_message(content)
     
-    # 5. FORMATAR A RESPOSTA CORRETAMENTE
-    # Se a requisição veio do Discord real, a resposta DEVE seguir o padrão de Interações da API deles.
+    # Formata o retorno para o Discord se for uma interação oficial
     if data.get("type") == 2:
-        # Extrai a mensagem de texto pura que o Jarvis gerou
         reply_text = jarvis_result.get("message") or jarvis_result.get("summary") or "Jarvis processou o comando."
         return {
-            "type": 4,  # Tipo 4: Responde ao canal com uma mensagem de texto
+            "type": 4,  # CHANNEL_MESSAGE_WITH_SOURCE
             "data": {
                 "content": reply_text
             }
         }
         
-    # Se veio do seu cURL antigo, mantém o retorno do dicionário completo do Jarvis
     return jarvis_result
-
 
 @app.get("/jarvis/memory")
 async def get_memory():

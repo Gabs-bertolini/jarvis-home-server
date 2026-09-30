@@ -21,11 +21,11 @@ job "jarvis-home-server" {
 
         command = "bash"
 
-        args = [
+         args = [
           "-lc",
           <<EOF
 cd /app && \
-python -m pip install --no-cache-dir -r requirements.txt && \
+python -m pip install --no-cache-dir --break-system-packages -r requirements.txt && \
 python -m uvicorn app:app --host 0.0.0.0 --port 8000
 EOF
         ]
